@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تمرین لغات فارسی</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f4f4f4;
+            margin: 0;
+            direction: rtl; /* برای راست به چپ */
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 600px; /* افزایش عرض برای معانی طولانی‌تر */
+            width: 90%;
+        }
+        h2 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        p#question-text {
+            font-size: 1.5em; /* بزرگ‌تر کردن متن سوال */
+            font-weight: bold;
+            color: #0056b3; /* رنگ آبی برای کلمه سوال */
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        .options-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            word-wrap: break-word; /* برای شکستن کلمات طولانی */
+            text-align: center;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button.correct {
+            background-color: #28a745;
+        }
+        button.incorrect {
+            background-color: #dc3545;
+        }
+        #feedback {
+            margin-top: 25px;
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #333;
+        }
+        .action-buttons {
+            margin-top: 30px;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap; /* برای واکنش‌گرا بودن دکمه‌ها در صفحه کوچک */
+        }
+        .action-buttons button {
+            background-color: #6c757d;
+        }
+        .action-buttons button:hover {
+            background-color: #5a6268;
+        }
+        #restart-button {
+            background-color: #ffc107;
+            color: #333;
+            display: none; /* در ابتدا پنهان است */
+        }
+        #restart-button:hover {
+            background-color: #e0a800;
+        }
+        #learned-button {
+            background-color: #17a2b8;
+            display: none; /* در ابتدا پنهان است */
+        }
+        #learned-button:hover {
+            background-color: #138496;
+        }
+        #progress-bar {
+            width: 100%;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        #progress {
+            width: 0%;
+            height: 15px;
+            background-color: #4CAF50;
+            border-radius: 5px;
+            text-align: center;
+            color: white;
+            line-height: 15px;
+            font-size: 0.8em;
+            transition: width 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>تمرین لغات فارسی</h2>
+        <p id="question-text"></p>
+        <div class="options-grid" id="options-container">
+            </div>
+        <div id="feedback"></div>
+        <div class="action-buttons">
+            <button id="next-button" onclick="loadNewQuestion()">سوال بعدی</button>
+            <button id="learned-button" onclick="markAsLearned()">این لغت را یاد گرفتم</button>
+            <button id="restart-button" onclick="restartQuiz()">شروع مجدد</button>
+        </div>
+        <div id="progress-bar">
+            <div id="progress"></div>
+        </div>
+    </div>
+
+    <script>
+        const originalData = [
+            { word: "جافی", meaning: "ستمگر" },
+            { word: "حازم", meaning: "محتاط" },
+            { word: "شکن", meaning: "پیچ و خم" },
+            { word: "گلبن", meaning: "بوته" },
+            { word: "مکاید", meaning: "مکرها" },
+            { word: "میعاد", meaning: "وعده" },
+            { word: "نمط", meaning: "روش" },
+            { word: "ورطه", meaning: "گرداب" },
+            { word: "یله", meaning: "تکیه دادن" },
+            { word: "ضایع", meaning: "تباه" },
+            { word: "عمله", meaning: "کارگران" },
+            { word: "قرابت", meaning: "خویشاوندی" },
+            { word: "مستغنی", meaning: "بی نیاز" },
+            { word: "مولع", meaning: "بسیار مشتاق" },
+            { word: "نموده", meaning: "نشان داده" },
+            { word: "تالاب", meaning: "ابگیر" },
+            { word: "حضیض", meaning: "جای پست" },
+            { word: "رفیع", meaning: "بالا" },
+            { word: "عزم", meaning: "قصد" },
+            { word: "فلق", meaning: "سپیده صبح" },
+            { word: "نجابت", meaning: "اصالت" },
+            { word: "ایت", meaning: "نشانه" },
+            { word: "خذلان", meaning: "خواری" },
+            { word: "رمه", meaning: "گله" },
+            { word: "طالع", meaning: "سرنوشت" },
+            { word: "ماسوا", meaning: "همه غیر از خدا" },
+            { word: "محنت", meaning: "اندوه" },
+            { word: "حقه", meaning: "جعبه" },
+            { word: "سودا", meaning: "اندیشه" },
+            { word: "جبار", meaning: "مسلط" },
+            { word: "جفا", meaning: "بی وفایی" },
+            { word: "طرب", meaning: "شادی" },
+            { word: "عداوت", meaning: "دشمنی" },
+            { word: "غِنا", meaning: "سروده" },
+            { word: "فرقت", meaning: "جدایی" },
+            { word: "کایدان", meaning: "حیله گران" },
+            { word: "کید", meaning: "حیله" },
+            { word: "لئیمی", meaning: "پستی" },
+            { word: "نقض", meaning: "شکستن" },
+            { word: "وصلت", meaning: "پیوند" },
+            { word: "اهلیت", meaning: "شایستگی" },
+            { word: "ادیب", meaning: "سخن دان" },
+            { word: "درحال", meaning: "فورا" },
+            { word: "دین", meaning: "وام" },
+            { word: "رقعه", meaning: "نامه کوتاه" },
+            { word: "شوخ", meaning: "چرک" },
+            { word: "غوک", meaning: "قروباغه" },
+            { word: "فرج", meaning: "گشایش" },
+            { word: "قیاس کردن", meaning: "سنجیدن" },
+            { word: "قیم", meaning: "سرپرست" },
+            { word: "کرای", meaning: "کرایه" },
+            { word: "مرمت", meaning: "اصلاح کردن" },
+            { word: "مروت", meaning: "جوانمردی" },
+            { word: "مکاری", meaning: "کرایه دهنده اسب" },
+            { word: "اخره", meaning: "چنبره گردن" },
+            { word: "بیغوله", meaning: "کنج" },
+            { word: "خیل", meaning: "گروه" },
+            { word: "رعنا", meaning: "زیبا" },
+            { word: "رندانه", meaning: "زیرکانه" },
+            { word: "غارب", meaning: "میان دو کتف" },
+            { word: "کله", meaning: "برامدگی پشت اسب" },
+            { word: "گرته زدن", meaning: "طراحی با خاک" },
+            { word: "گرده", meaning: "بالای کمر" },
+            { word: "مرفه", meaning: "راحت" },
+            { word: "مشوش", meaning: "اشفته" },
+            { word: "وقب", meaning: "هر فرورفتگی" },
+            { word: "استدعا", meaning: "درخواست" },
+            { word: "اسوه", meaning: "پیشوا" },
+            { word: "تجلی", meaning: "اشکار" },
+            { word: "جنود", meaning: "سربازان" },
+            { word: "خور", meaning: "زمین پست" },
+            { word: "رعب", meaning: "وحشت" },
+            { word: "غَنا", meaning: "توانگر" },
+            { word: "نسیان", meaning: "فراموشی" },
+            { word: "وسواس", meaning: "دودلی" },
+            { word: "تقریظ", meaning: "مطلبی ستایشی" },
+            { word: "توسن", meaning: "اسب سرکش" },
+            { word: "خصم", meaning: "دشمن" },
+            { word: "وقاحت", meaning: "بی شرمی" },
+            { word: "بارگی", meaning: "اسب" },
+            { word: "ترگ", meaning: "کلاهخود" },
+            { word: "عنان", meaning: "افسار اسب" },
+            { word: "کوس", meaning: "طبل" },
+            { word: "گبر", meaning: "نوعی لباس جنگ" },
+            { word: "مزیح", meaning: "شوخی" },
+            { word: "باره", meaning: "قلعه" },
+            { word: "بردمیدن", meaning: "خروشیدن" },
+            { word: "پدرام", meaning: "سبزوخرم" },
+            { word: "برگاشتن", meaning: "برگردانیدن" },
+            { word: "تاب", meaning: "چرخ و پیچ" },
+            { word: "خطه", meaning: "سرزمین" },
+            { word: "خیره", meaning: "متحیر" },
+            { word: "درع", meaning: "جامه جنگی" },
+            { word: "دمان", meaning: "خروشنده" },
+            { word: "دوده", meaning: "خاندان" },
+            { word: "سنان", meaning: "سرنیزه" },
+            { word: "شیراوژن", meaning: "شیرافکن" },
+            { word: "فتراک", meaning: "ترکبند" },
+            { word: "هژیر", meaning: "چابک" },
+            { word: "فوج", meaning: "گروه" },
+            { word: "ویله", meaning: "ناله" },
+            { word: "اشباه", meaning: "مانندها" },
+            { word: "تلطف", meaning: "مهربانی" },
+            { word: "جولقی", meaning: "درویشی" },
+            { word: "حاذق", meaning: "ماهر" },
+            { word: "زبون", meaning: "خوار" },
+            { word: "سرگین", meaning: "فضله" },
+            { word: "طاس", meaning: "کاسه مسی" },
+            { word: "قهر", meaning: "خشم" },
+            { word: "ارتجالا", meaning: "بی درنگ" },
+            { word: "استرحام", meaning: "رحم خواستم" },
+            { word: "استماع", meaning: "شنیدن" },
+            { word: "اوان", meaning: "وقت" },
+            { word: "باری", meaning: "خلاصه" },
+            { word: "بدسگال", meaning: "بداندیش" },
+            { word: "تقریر", meaning: "بیان" },
+            { word: "تکیده", meaning: "لاغر" },
+            { word: "عنود", meaning: "ستیزه کاری" },
+            { word: "فیاض", meaning: "بسیار بخشنده" }, // فیاض اصلاح شد: از "سرنوشت" به "بسیار بخشنده"
+            { word: "لاجرم", meaning: "ناگزیر" },
+            { word: "مالوف", meaning: "خوگرفته" },
+            { word: "مخذول", meaning: "خوار" },
+            { word: "مسکر", meaning: "مستی اور" },
+            { word: "مغلوب", meaning: "شکست خورده" },
+            { word: "مندرس", meaning: "کهنه" },
+            { word: "منکر", meaning: "رفتار زشت" },
+            { word: "لگام", meaning: "افسر اسب" },
+            { word: "چنبر", meaning: "دایره" },
+            { word: "مائده", meaning: "نعمت" }
+        ];
+
+        let availableWords = [];
+        let learnedWords = [];
+        let currentQuestion = null;
+        let selectedWordForQuestion = null;
+
+        const progressBar = document.getElementById('progress');
+        let totalInitialWords = 0; // تعداد کل کلمات در ابتدای هر دور (غیر از یادگرفته شده‌ها)
+
+        function updateProgressBar() {
+            if (totalInitialWords === 0) { // جلوگیری از تقسیم بر صفر در شروع یا وقتی همه یاد گرفته شده اند
+                progressBar.style.width = '100%';
+                progressBar.innerText = '۱۰۰٪ (همه لغات یاد گرفته شده‌اند!)';
+                return;
+            }
+            const answeredInThisRound = totalInitialWords - availableWords.length;
+            const progressPercentage = (answeredInThisRound / totalInitialWords) * 100;
+
+            progressBar.style.width = `${progressPercentage}%`;
+            progressBar.innerText = `${Math.round(progressPercentage)}%`;
+
+            if (availableWords.length === 0) {
+                 progressBar.style.width = '100%';
+                 progressBar.innerText = '۱۰۰٪ (دور فعلی به پایان رسید!)';
+            }
+        }
+
+        function initializeQuiz() {
+            learnedWords = JSON.parse(localStorage.getItem('learnedWords')) || [];
+            availableWords = originalData.filter(item => !learnedWords.some(learned => learned.word === item.word && learned.meaning === item.meaning));
+            totalInitialWords = availableWords.length; // تعداد کلمات برای دور فعلی
+            shuffleArray(availableWords);
+            loadNewQuestion();
+            document.getElementById('restart-button').style.display = 'none';
+            updateProgressBar();
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function loadNewQuestion() {
+            if (availableWords.length === 0) {
+                document.getElementById('question-text').innerText = "تبریک! تمام لغات این دور را یاد گرفتید یا پاسخ دادید. می‌توانید دوباره شروع کنید یا لغات جدید یاد بگیرید.";
+                document.getElementById('options-container').innerHTML = '';
+                document.getElementById('feedback').innerText = '';
+                document.getElementById('next-button').style.display = 'none';
+                document.getElementById('learned-button').style.display = 'none';
+                document.getElementById('restart-button').style.display = 'block';
+                updateProgressBar();
+                return;
+            }
+
+            document.getElementById('feedback').innerText = '';
+            document.getElementById('next-button').style.display = 'none';
+            document.getElementById('learned-button').style.display = 'none';
+            document.getElementById('options-container').innerHTML = '';
+
+            shuffleArray(availableWords);
+            selectedWordForQuestion = availableWords[0];
+
+            document.getElementById('question-text').innerText = `${selectedWordForQuestion.word}: معنی چیست؟`;
+
+            let correctMeaning = selectedWordForQuestion.meaning;
+            let options = [correctMeaning];
+
+            let incorrectOptionsPool = originalData.filter(item => item.meaning !== correctMeaning);
+            shuffleArray(incorrectOptionsPool);
+
+            for (let i = 0; options.length < 4 && i < incorrectOptionsPool.length; i++) {
+                // اطمینان از عدم تکرار گزینه‌های اشتباه و انتخاب از مجموعه کلمات کامل
+                if (!options.includes(incorrectOptionsPool[i].meaning)) {
+                    options.push(incorrectOptionsPool[i].meaning);
+                }
+            }
+
+            // اگر به هر دلیلی کمتر از ۴ گزینه داشتیم، با معانی تصادفی پر می‌کنیم
+            while (options.length < 4) {
+                 const randomMeaning = originalData[Math.floor(Math.random() * originalData.length)].meaning;
+                 if (!options.includes(randomMeaning)) {
+                     options.push(randomMeaning);
+                 }
+            }
+
+
+            shuffleArray(options);
+
+            const optionsContainer = document.getElementById('options-container');
+            options.forEach(option => {
+                const button = document.createElement('button');
+                button.innerText = option;
+                button.onclick = () => checkAnswer(option, correctMeaning, button);
+                optionsContainer.appendChild(button);
+            });
+            updateProgressBar();
+        }
+
+        function checkAnswer(selectedOption, correctOption, button) {
+            const feedbackElement = document.getElementById('feedback');
+            const allButtons = document.querySelectorAll('#options-container button');
+
+            allButtons.forEach(btn => {
+                btn.disabled = true;
+                if (btn.innerText === correctOption) {
+                    btn.classList.add('correct');
+                }
+            });
+
+            if (selectedOption === correctOption) {
+                feedbackElement.innerText = 'پاسخ صحیح است! 🎉';
+                feedbackElement.style.color = '#28a745';
+                button.classList.add('correct');
+                document.getElementById('learned-button').style.display = 'block';
+            } else {
+                feedbackElement.innerText = `پاسخ اشتباه است. پاسخ صحیح: ${correctOption}`;
+                feedbackElement.style.color = '#dc3545';
+                button.classList.add('incorrect');
+                document.getElementById('learned-button').style.display = 'none';
+            }
+            document.getElementById('next-button').style.display = 'block';
+            updateProgressBar();
+        }
+
+        function markAsLearned() {
+            if (selectedWordForQuestion) {
+                // اطمینان حاصل کنید که کلمه تکراری در learnedWords اضافه نشود
+                if (!learnedWords.some(lw => lw.word === selectedWordForQuestion.word && lw.meaning === selectedWordForQuestion.meaning)) {
+                    learnedWords.push(selectedWordForQuestion);
+                    localStorage.setItem('learnedWords', JSON.stringify(learnedWords)); // ذخیره در localStorage
+                }
+                availableWords = availableWords.filter(item => item !== selectedWordForQuestion);
+                selectedWordForQuestion = null;
+                loadNewQuestion();
+            }
+        }
+
+        function restartQuiz() {
+            learnedWords = []; // پاک کردن لیست یاد گرفته شده‌ها
+            localStorage.removeItem('learnedWords'); // حذف از localStorage
+            initializeQuiz(); // شروع مجدد کامل
+        }
+
+        // بارگذاری اولین سوال هنگام باز شدن صفحه
+        window.onload = initializeQuiz;
+    </script>
+</body>
+</html>
